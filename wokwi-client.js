@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2025 CodeMagic LTD
+
+import { byteArrayToBase64, base64ToByteArray } from './base64.js';
+
 /**
  * @typedef {Object} IEventData
  * @property {string} name - Event name (e.g. serial-monitor:data)
@@ -63,8 +68,11 @@ export class WokwiClient extends EventTarget {
   }
 
   /**
+   * Upload a file to the simulator
+   * 
    * @param {string} name
    * @param {string|ArrayBuffer} content
+   * @returns {Promise<void>}
    */
   async fileUpload(name, content) {
     if (typeof content === 'string') {
@@ -72,8 +80,23 @@ export class WokwiClient extends EventTarget {
     } else {
       return this.sendCommand('file:upload', {
         name,
-        binary: Buffer.from(content).toString('base64'),
+        binary: byteArrayToBase64(content),
       });
+    }
+  }
+
+  /**
+   * Download a file from the simulator
+   * 
+   * @param {string} name 
+   * @returns {Promise<string|Uint8Array>} The file content as a string or Uint8Array
+   */
+  async fileDownload(name) {
+    const result = await this.sendCommand('file:download', { name });
+    if (typeof result.text === 'string') {
+      return result.text;
+    } else {
+      return new base64ToByteArray(result.binary);
     }
   }
 
