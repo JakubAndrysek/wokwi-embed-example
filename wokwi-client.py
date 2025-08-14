@@ -20,12 +20,12 @@ async def main() -> None:
     # Upload the diagram and firmware files
 
     await client.upload_file("diagram.json", "diagram.json")
-    await client.upload_file("jaculus.bin", "jaculus.bin")
+    await client.upload_file("jaculus.uf2", "jaculus.uf2")
     await client.upload_file("jaculus.elf", "jaculus.elf")
 
     # Start the simulation
     await client.start_simulation(
-        firmware="jaculus.bin",
+        firmware="jaculus.uf2",
         elf="jaculus.elf",
     )
 

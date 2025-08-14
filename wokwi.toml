@@ -5,7 +5,7 @@
 [wokwi]
 version = 1
 # firmware = 'build/flasher_args.json'
-firmware = 'jaculus.bin'
+firmware = 'jaculus.uf2'
 elf = "jaculus.elf"
 gdbServerPort=3333
 rfc2217ServerPort = 4000
