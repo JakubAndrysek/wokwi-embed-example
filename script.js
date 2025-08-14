@@ -19,13 +19,9 @@ window.addEventListener('message', (event) => {
     console.log('Diagram JSON parsed', diagram);
     await client.fileUpload('diagram.json', diagram);
 
-    const response_elf = await fetch('./jaculus.elf');
-    const elfContent = await response_elf.blob();
-    await client.fileUpload('jaculus.elf', elfContent);
-
-    const response_jaculus = await fetch('./uf2.bin');
-    const jaculusBinContent = await response_jaculus.blob();
-    await client.fileUpload('uf2.bin', jaculusBinContent);
+    const response_jaculus = await fetch('./jaculus.uf2');
+    const jaculusBinContent = await response_jaculus.arrayBuffer();
+    await client.fileUpload('jaculus.uf2', new Uint8Array(jaculusBinContent));
   });
 
   client.addEventListener('serial-monitor:data', (event) => {
@@ -35,8 +31,7 @@ window.addEventListener('message', (event) => {
 
   document.querySelector('.start-button').addEventListener('click', () => {
     client.simStart({
-      firmware: 'uf2.bin',
-      elf: 'jaculus.elf'
+      firmware: 'jaculus.uf2',
     });
   });
 });
