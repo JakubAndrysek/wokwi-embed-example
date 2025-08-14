@@ -4,30 +4,6 @@
 import { MessagePortTransport } from './message-port-transport.js';
 import { WokwiClient } from './wokwi-client.js';
 
-const diagram = `{
-  "version": 1,
-  "author": "Uri Shaked",
-  "editor": "wokwi",
-  "parts": [
-    {
-      "type": "board-esp32-devkit-c-v4",
-      "id": "esp",
-      "top": 0,
-      "left": 0,
-      "attrs": { "env": "micropython-20231227-v1.22.0" }
-    }
-  ],
-  "connections": [ [ "esp:TX", "$serialMonitor:RX", "", [] ], [ "esp:RX", "$serialMonitor:TX", "", [] ] ],
-  "dependencies": {}
-}`;
-
-const microPythonCode = `
-import time
-while True:
-    print(f"Hello, World {time.time()}")
-    time.sleep(1)
-`;
-
 const outputText = document.getElementById('output-text');
 
 window.addEventListener('message', (event) => {
@@ -36,8 +12,20 @@ window.addEventListener('message', (event) => {
   client.addEventListener('wokwi:connected', async (event) => {
     console.log('Wokwi client connected', event.detail);
     await client.serialMonitorListen();
-    await client.fileUpload('main.py', microPythonCode);
+
+    const response_diagram = await fetch('./diagram.json');
+    console.log('Diagram JSON fetched', response_diagram);
+    const diagram = await response_diagram.text();
+    console.log('Diagram JSON parsed', diagram);
     await client.fileUpload('diagram.json', diagram);
+
+    const response_elf = await fetch('./jaculus.elf');
+    const elfContent = await response_elf.blob();
+    await client.fileUpload('jaculus.elf', elfContent);
+
+    const response_jaculus = await fetch('./uf2.bin');
+    const jaculusBinContent = await response_jaculus.blob();
+    await client.fileUpload('uf2.bin', jaculusBinContent);
   });
 
   client.addEventListener('serial-monitor:data', (event) => {
@@ -47,8 +35,8 @@ window.addEventListener('message', (event) => {
 
   document.querySelector('.start-button').addEventListener('click', () => {
     client.simStart({
-      firmware: 'main.py',
-      elf: 'main.py',
+      firmware: 'uf2.bin',
+      elf: 'jaculus.elf'
     });
   });
 });

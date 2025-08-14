@@ -1,0 +1,11 @@
+# Wokwi Configuration File
+
+# Reference: https://docs.wokwi.com/vscode/project-config
+
+[wokwi]
+version = 1
+# firmware = 'build/flasher_args.json'
+firmware = 'jaculus.bin'
+elf = "jaculus.elf"
+gdbServerPort=3333
+rfc2217ServerPort = 4000
