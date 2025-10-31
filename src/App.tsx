@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MessagePortTransport, APIClient } from 'wokwi-cli';
 import type { APIEvent, SerialMonitorDataPayload } from 'wokwi-cli';
+import Editor from '@monaco-editor/react';
 
 const diagram = `{
   "version": 1,
@@ -19,20 +20,26 @@ const diagram = `{
   "dependencies": {}
 }`;
 
-const microPythonCode = `
-import time
+const microPythonCode = `import time
 while True:
-    print(f"Hello, World {time.time()}")
-    time.sleep(1)
+  print(f"Hello, World {time.time()}")
+  time.sleep(1)
 `;
 
 function App() {
   const [output, setOutput] = useState('');
   const [isConnected, setIsConnected] = useState(false);
+  const [code, setCode] = useState(microPythonCode);
   const clientRef = useRef<APIClient | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
+    // Load code from localStorage if available
+    const savedCode = localStorage.getItem('wokwi-mpy-code');
+    if (savedCode) {
+      setCode(savedCode);
+    }
+
     const handleMessage = async (event: MessageEvent) => {
       if (event.data && event.data.port) {
         console.log('Received MessagePort from iframe');
@@ -48,7 +55,6 @@ function App() {
           setIsConnected(true);
 
           await client.serialMonitorListen();
-          await client.fileUpload('main.py', microPythonCode);
           await client.fileUpload('diagram.json', diagram);
         };
 
@@ -72,8 +78,11 @@ function App() {
     };
   }, []);
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (clientRef.current) {
+      // Save code to localStorage
+      localStorage.setItem('wokwi-mpy-code', code);
+      await clientRef.current.fileUpload('main.py', code);
       clientRef.current.simStart({
         firmware: 'main.py',
         elf: 'main.py',
@@ -93,62 +102,93 @@ function App() {
           </p>
         </header>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Simulation Panel */}
-          <div className="bg-slate-800 rounded-xl p-6 shadow-2xl border border-slate-700">
-            <h2 className="text-xl font-semibold text-blue-300 mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm8 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V8z" clipRule="evenodd" />
-              </svg>
-              ESP32 Simulation
-            </h2>
+                <div className="space-y-4">
+          {/* First Row: Code Editor and Simulation */}
+          <div className="grid lg:grid-cols-2 gap-4">
+            {/* Python Editor Panel */}
+            <div className="bg-slate-800 rounded-xl p-6 shadow-2xl border border-slate-700">
+              <h2 className="text-xl font-semibold text-blue-300 mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4z" clipRule="evenodd" />
+                </svg>
+                MicroPython Code Editor
+              </h2>
 
-            <div className="bg-slate-950 rounded-lg p-2 mb-4">
-              <iframe
-                ref={iframeRef}
-                src="https://wokwi.com/experimental/embed"
-                width="100%"
-                height="500"
-                id="wokwi-embed"
-                className="rounded-lg"
-              ></iframe>
+              <div className="bg-slate-950 rounded-lg overflow-hidden border border-slate-700 h-[500px]">
+                <Editor
+                  height="500px"
+                  defaultLanguage="python"
+                  theme="vs-dark"
+                  value={code}
+                  onChange={(value) => setCode(value || '')}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    roundedSelection: false,
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                  }}
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <button
-                onClick={handleStart}
-                disabled={!isConnected}
-                className={`
-                  px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center
-                  ${isConnected
-                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-blue-500/25'
-                    : 'bg-slate-600 text-slate-400 cursor-not-allowed'
-                  }
-                `}
-              >
+            {/* Simulation Panel */}
+            <div className="bg-slate-800 rounded-xl p-6 shadow-2xl border border-slate-700">
+              <h2 className="text-xl font-semibold text-blue-300 mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm8 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V8z" clipRule="evenodd" />
                 </svg>
-                Start Simulation
-              </button>
+                ESP32 Simulation
+              </h2>
 
-              <div className={`
-                flex items-center px-4 py-2 rounded-lg text-sm font-medium
-                ${isConnected
-                  ? 'bg-green-900/50 text-green-400 border border-green-700'
-                  : 'bg-yellow-900/50 text-yellow-400 border border-yellow-700'
-                }
-              `}>
+              <div className="bg-slate-950 rounded-lg p-2 mb-4">
+                <iframe
+                  ref={iframeRef}
+                  src="https://wokwi.com/experimental/embed"
+                  width="100%"
+                  height="400"
+                  id="wokwi-embed"
+                  className="rounded-lg"
+                ></iframe>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handleStart}
+                  disabled={!isConnected}
+                  className={`
+                    px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center
+                    ${isConnected
+                      ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg hover:shadow-blue-500/25'
+                      : 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                    }
+                  `}
+                >
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                  </svg>
+                  Start Simulation
+                </button>
+
                 <div className={`
-                  w-2 h-2 rounded-full mr-2 animate-pulse
-                  ${isConnected ? 'bg-green-400' : 'bg-yellow-400'}
-                `}></div>
-                {isConnected ? 'Connected' : 'Connecting...'}
+                  flex items-center px-4 py-2 rounded-lg text-sm font-medium
+                  ${isConnected
+                    ? 'bg-green-900/50 text-green-400 border border-green-700'
+                    : 'bg-yellow-900/50 text-yellow-400 border border-yellow-700'
+                  }
+                `}>
+                  <div className={`
+                    w-2 h-2 rounded-full mr-2 animate-pulse
+                    ${isConnected ? 'bg-green-400' : 'bg-yellow-400'}
+                  `}></div>
+                  {isConnected ? 'Connected' : 'Connecting...'}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Serial Monitor Panel */}
+          {/* Second Row: Serial Monitor */}
           <div className="bg-slate-800 rounded-xl p-6 shadow-2xl border border-slate-700">
             <h2 className="text-xl font-semibold text-blue-300 mb-4 flex items-center">
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -157,7 +197,7 @@ function App() {
               Serial Monitor Output
             </h2>
 
-            <div className="bg-slate-950 rounded-lg p-4 h-[500px] overflow-auto border border-slate-700">
+            <div className="bg-slate-950 rounded-lg p-4 h-[300px] overflow-auto border border-slate-700">
               <pre className="text-green-400 font-mono text-sm leading-relaxed whitespace-pre-wrap">
                 {output || (
                   <span className="text-slate-500 italic">
@@ -165,6 +205,15 @@ function App() {
                   </span>
                 )}
               </pre>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setOutput('')}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm transition-colors"
+              >
+                Clear Output
+              </button>
             </div>
           </div>
         </div>
