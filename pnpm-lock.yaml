@@ -54,9 +54,6 @@ importers:
       vite:
         specifier: npm:rolldown-vite@7.1.14
         version: rolldown-vite@7.1.14(@types/node@24.9.2)(esbuild@0.25.11)(tsx@4.20.6)(yaml@2.8.1)
-      wokwi-cli:
-        specifier: workspace:*
-        version: link:../wokwi-cli
 
   ../wokwi-cli:
     dependencies:
