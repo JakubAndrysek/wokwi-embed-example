@@ -5,7 +5,7 @@ import Editor from '@monaco-editor/react';
 
 const diagram = `{
   "version": 1,
-  "author": "Uri Shaked",
+  "author": "Jakub Andrýsek",
   "editor": "wokwi",
   "parts": [
     {
@@ -14,16 +14,50 @@ const diagram = `{
       "top": 0,
       "left": 0,
       "attrs": { "env": "micropython-20231227-v1.22.0" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 25.2,
+      "left": 138.2,
+      "attrs": { "color": "red", "flip": "" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 100.8,
+      "left": 124.25,
+      "rotate": 90,
+      "attrs": { "value": "1000" }
     }
   ],
-  "connections": [ [ "esp:TX", "$serialMonitor:RX", "", [] ], [ "esp:RX", "$serialMonitor:TX", "", [] ] ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "led1:C", "r1:1", "green", [ "v0" ] ],
+    [ "esp:GND.3", "r1:2", "black", [ "h33.64", "v57.6", "h19.2" ] ],
+    [ "esp:2", "led1:A", "green", [ "h0" ] ]
+  ],
   "dependencies": {}
-}`;
+}
+`;
 
-const microPythonCode = `import time
+const microPythonCode = `from machine import Pin
+from utime import sleep
+
+print("Hello, ESP32!")
+
+led = Pin(2, Pin.OUT)
+count = 0
 while True:
-  print(f"Hello, World {time.time()}")
-  time.sleep(1)
+  led.on()
+  print(f"LED is ON - Count: {count}")
+  sleep(0.5)
+  led.off()
+  print(f"LED is OFF - Count: {count}")
+  sleep(0.5)
+  count += 1
+
 `;
 
 function App() {
