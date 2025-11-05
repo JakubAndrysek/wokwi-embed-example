@@ -3,7 +3,7 @@ import { MessagePortTransport, APIClient } from 'wokwi-cli';
 import type { APIEvent, SerialMonitorDataPayload } from 'wokwi-cli';
 import Editor from '@monaco-editor/react';
 
-const diagram = `{
+const diagramDefault = `{
   "version": 1,
   "author": "Jakub Andrýsek",
   "editor": "wokwi",
@@ -64,6 +64,7 @@ function App() {
   const [output, setOutput] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [code, setCode] = useState(microPythonCode);
+  const [diagram, setDiagram] = useState(localStorage.getItem('wokwi-mpy-diagram') || diagramDefault);
   const clientRef = useRef<APIClient | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -114,6 +115,13 @@ function App() {
 
   const handleStart = async () => {
     if (clientRef.current) {
+      const diagramNew = (await clientRef.current.fileDownload('diagram.json')).toString();
+      if (diagramNew) {
+        setDiagram(diagramNew);
+        localStorage.setItem('wokwi-mpy-diagram', diagramNew);
+      }
+
+
       // Save code to localStorage
       localStorage.setItem('wokwi-mpy-code', code);
       await clientRef.current.fileUpload('main.py', code);
@@ -121,6 +129,8 @@ function App() {
         firmware: 'main.py',
         elf: 'main.py',
       });
+
+
     }
   };
 
