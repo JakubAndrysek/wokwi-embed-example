@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout Wokwi-cli
-        run: git clone https://github.com/JakubAndrysek/wokwi-cli.git --branch shared-client  ../wokwi-cli
+        run: git clone https://github.com/JakubAndrysek/wokwi-cli.git --branch monorepo-separation  ../wokwi-cli
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MessagePortTransport, APIClient } from 'wokwi-cli';
-import type { APIEvent, SerialMonitorDataPayload } from 'wokwi-cli';
+import { MessagePortTransport, APIClient, type APIEvent, type SerialMonitorDataPayload } from 'wokwi-client-js';
 import Editor from '@monaco-editor/react';
 
 const diagramDefault = `{
@@ -67,6 +66,7 @@ function App() {
   const [diagram, setDiagram] = useState(localStorage.getItem('wokwi-mpy-diagram') || diagramDefault);
   const clientRef = useRef<APIClient | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const monitorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     // Load code from localStorage if available
@@ -111,7 +111,18 @@ function App() {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, []);
+  }, [diagram]);
+
+  // Auto-scroll serial monitor when new output arrives
+  useEffect(() => {
+    if (monitorRef.current) {
+      try {
+        monitorRef.current.scrollTop = monitorRef.current.scrollHeight;
+      } catch (e) {
+        // ignore scrolling errors
+      }
+    }
+  }, [output]);
 
   const handleStart = async () => {
     if (clientRef.current) {
@@ -121,7 +132,6 @@ function App() {
         localStorage.setItem('wokwi-mpy-diagram', diagramNew);
       }
 
-
       // Save code to localStorage
       localStorage.setItem('wokwi-mpy-code', code);
       await clientRef.current.fileUpload('main.py', code);
@@ -129,8 +139,6 @@ function App() {
         firmware: 'main.py',
         elf: 'main.py',
       });
-
-
     }
   };
 
@@ -187,14 +195,23 @@ function App() {
               </h2>
 
               <div className="bg-slate-950 rounded-lg p-2 mb-4">
-                <iframe
+                {/* <iframe
                   ref={iframeRef}
                   src="https://wokwi.com/experimental/embed"
                   width="100%"
                   height="400"
                   id="wokwi-embed"
                   className="rounded-lg"
-                ></iframe>
+                ></iframe> */}
+                <iframe
+                  ref={iframeRef}
+                  src="https://wokwi.com/experimental/viewer?api=1&diagram=https%3A%2F%2Fdocs.espressif.com%2Fprojects%2Farduino-esp32-wokwi-test%2Fen%2Fdocs-embed%2F_static%2Fbinaries%2Flibraries%2FESP32%2Fexamples%2FAnalogRead%2Fesp32%2Fdiagram.esp32.json&firmware=https%3A%2F%2Fdocs.espressif.com%2Fprojects%2Farduino-esp32-wokwi-test%2Fen%2Fdocs-embed%2F_static%2Fbinaries%2Flibraries%2FESP32%2Fexamples%2FAnalogRead%2Fesp32%2FAnalogRead.ino.merged.bin"
+                  // src="https://wokwi.com/experimental/viewer?api=1&diagram=https%3A%2F%2Fdocs.espressif.com%2Fprojects%2Farduino-esp32-wokwi-test%2Fen%2Fdocs-embed%2F_static%2Fbinaries%2Flibraries%2FWire%2Fexamples%2FLiquidCrystal_I2C%2Fesp32%2Fdiagram.esp32.json&firmware=https%3A%2F%2Fdocs.espressif.com%2Fprojects%2Farduino-esp32-wokwi-test%2Fen%2Fdocs-embed%2F_static%2Fbinaries%2Flibraries%2FWire%2Fexamples%2FLiquidCrystal_I2C%2Fesp32%2FLiquidCrystal_I2C.ino.merged.bin"
+                  width="100%" height="500px"
+                  loading="lazy"
+                  className="wokwi-embed from-example"
+                  frameBorder="0" name="70ba260c-b80b-4362-8e4b-bf7c693b9a17"></iframe>
+
               </div>
 
               <div className="flex items-center justify-between">
@@ -241,7 +258,7 @@ function App() {
               Serial Monitor Output
             </h2>
 
-            <div className="bg-slate-950 rounded-lg p-4 h-[300px] overflow-auto border border-slate-700">
+            <div ref={monitorRef} className="bg-slate-950 rounded-lg p-4 h-[300px] overflow-auto border border-slate-700">
               <pre className="text-green-400 font-mono text-sm leading-relaxed whitespace-pre-wrap">
                 {output || (
                   <span className="text-slate-500 italic">
